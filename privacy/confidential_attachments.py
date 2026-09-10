@@ -45,9 +45,14 @@ notices within a day and asks for it. The other direction nobody notices.
 import re
 
 # The filename alone is enough. Nobody names a delivery note "payslip".
+#
+# The form codes are bracketed by hand rather than with \b. An underscore is
+# a word character, so \bw-?2\b does not match W-2_2025.pdf, which is exactly
+# how the file arrives. The trailing (?!\d) stops W-2 swallowing W-2025.
 FILENAME = re.compile(
     r"pay[\s_-]?slip|payroll|wage[\s_-]?slip|salary[\s_-]?statement|"
-    r"\bp60\b|\bp45\b|\bw-?2\b|form[\s_-]?16|"
+    r"(?<![a-z0-9])p60(?!\d)|(?<![a-z0-9])p45(?!\d)|(?<![a-z0-9])w[-_ ]?2(?!\d)|"
+    r"form[\s_-]?16|"
     r"severance|attendance[\s_-]?sheet|timesheet",
     re.I)
 
