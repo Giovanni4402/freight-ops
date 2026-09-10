@@ -62,6 +62,18 @@ and filtered them out of the queries, which fixed nothing: the file was still
 on disk and the OCR text was still reachable by full-text search. The check
 now runs before the payload is decoded, so the file is never written at all.
 
+**[`retrieval/chunk_transcripts.py`](retrieval/chunk_transcripts.py)** and
+**[`retrieval/embedding_provider.py`](retrieval/embedding_provider.py)** are search
+over recorded meetings. What was there before indexed one vector per meeting,
+computed over the first 6,000 characters of a transcript averaging 22,585, so
+three quarters of what was said never reached the index. The interesting part
+is not the chunking, it is the trap under the provider fallback: hosted
+embeddings are 1,536 numbers and the model I run myself returns 384, and
+comparing them raises nothing at all. `zip` stops at the shorter one and
+cosine returns a number that looks like every other number. So the provider is
+chosen once per run and never mid-run, search asks which model built the index
+and queries with that one, and cosine returns zero on a length mismatch.
+
 **[`state/shipment_state.py`](state/shipment_state.py)** and
 **[`state/shipmentState.ts`](state/shipmentState.ts)** answer the only question
 anybody asks all day. The hard part is not parsing email, it is that the
@@ -81,7 +93,7 @@ pip install pytest "psycopg[binary]"
 pytest
 ```
 
-63 tests. Most of them are pinned behaviours rather than coverage: a guard
+84 tests. Most of them are pinned behaviours rather than coverage: a guard
 against over-merging is one line of code, and nothing in that line says which
 mailbox disaster put it there. The tests say it.
 
@@ -90,10 +102,17 @@ two failure modes it was written to fix. Without `DATABASE_URL` those thirteen
 skip and the rest still run on a laptop. CI brings up Postgres 16 and runs the
 lot on Python 3.11, 3.12 and 3.13.
 
-Writing them was not free. `test_form_codes_survive_an_underscore` exists
-because it failed the first time I ran it: `\bw-?2\b` does not match
-`W-2_2025.pdf`, since `2` and `_` are both word characters and there is no
-boundary between them. That is a tax form walking into the archive.
+Two of them earned their keep immediately.
+`test_form_codes_survive_an_underscore` failed the first time I ran it:
+`\bw-?2\b` does not match `W-2_2025.pdf`, since `2` and `_` are both word
+characters and there is no boundary between them. That is a tax form walking
+into the archive.
+
+`test_two_models_never_compare` is the one I would point at. Comparing a
+1,536-number vector to a 384-number one raises nothing, logs nothing, and
+looks like nothing from the outside: results keep arriving, ranked and
+plausible, computed from the first 384 numbers of the wrong vector. It is the
+worst shape a bug can have and among the cheapest to write a test for.
 
 ## How it is built
 

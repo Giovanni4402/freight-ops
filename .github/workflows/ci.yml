@@ -37,7 +37,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - run: pip install pytest "psycopg[binary]"
+      - run: pip install pytest pytest-asyncio "psycopg[binary]"
 
       - run: pytest -q
         env:

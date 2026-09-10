@@ -1,2 +1,4 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The provider probe is async, and marking each test by hand is noise.
+asyncio_mode = "auto"
