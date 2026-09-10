@@ -1,5 +1,7 @@
 # freight-ops
 
+[![tests](https://github.com/Giovanni4402/freight-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/Giovanni4402/freight-ops/actions/workflows/ci.yml)
+
 Parts of the system my company runs on. I work at a freight forwarder and I
 built the software we use every day.
 
@@ -71,6 +73,27 @@ is a write-up of a bug an operator reported. The screen said a job had 29
 emails and he was certain there were more. He was right, but not for any of the
 reasons I assumed, and the fix I nearly shipped would have been worse than the
 bug.
+
+## Tests
+
+```bash
+pip install pytest "psycopg[binary]"
+pytest
+```
+
+63 tests. Most of them are pinned behaviours rather than coverage: a guard
+against over-merging is one line of code, and nothing in that line says which
+mailbox disaster put it there. The tests say it.
+
+The dedup query runs against a real Postgres, with fixtures that rebuild the
+two failure modes it was written to fix. Without `DATABASE_URL` those thirteen
+skip and the rest still run on a laptop. CI brings up Postgres 16 and runs the
+lot on Python 3.11, 3.12 and 3.13.
+
+Writing them was not free. `test_form_codes_survive_an_underscore` exists
+because it failed the first time I ran it: `\bw-?2\b` does not match
+`W-2_2025.pdf`, since `2` and `_` are both word characters and there is no
+boundary between them. That is a tax form walking into the archive.
 
 ## How it is built
 
